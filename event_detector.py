@@ -1,5 +1,7 @@
 from collections import defaultdict
 from scapy.layers.dns import DNS
+from scapy.layers.inet import ICMP
+from scapy.layers.inet import IP
 
 def detect_port_scans(events, threshold=3):
     scans = defaultdict(lambda: {
@@ -92,6 +94,38 @@ def detect_udp_activity(events: list[dict], threshold: int = 5) -> list[dict]:
                 "ports": sorted(data["ports"]),
                 "start_time": min(data["timestamps"]),
                 "end_time": max(data["timestamps"]),
+            })
+
+    return detections
+
+
+def detect_icmp_discovery(events):
+    # detect ICMP host discovery activity like ping sweeps
+    
+    # key is the source IP, values is a list of destination IPs
+    icmp_tracker = defaultdict(list)  
+
+    for e in events:
+        # Only consider ICMP packets
+        if e.get("protocol") != "ICMP":
+            continue
+
+        # We are interested in ICMP Echo Requests (type 8)
+        icmp_type = e.get("icmp_type")
+        if icmp_type == 8 and e.get("src_ip") and e.get("dst_ip"):
+            icmp_tracker[e["src_ip"]].append(e["dst_ip"])
+
+    detections = []
+    for src_ip, dst_ips in icmp_tracker.items():
+        
+        # threshold: > 1 host pinged    
+        if len(dst_ips) > 1:  
+            detections.append({
+                "type": "ICMP Host Discovery",
+                "src_ip": src_ip,
+                # unique targets
+                "targets": list(set(dst_ips)),  
+                "count": len(dst_ips),
             })
 
     return detections
