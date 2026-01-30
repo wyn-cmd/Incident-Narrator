@@ -1,10 +1,15 @@
 from pcap_parser import parse_pcap
-from event_detector import detect_port_scans, detect_dns_activity, detect_udp_activity
+from event_detector import detect_port_scans
+from event_detector import detect_dns_activity
+from event_detector import detect_udp_activity
+from event_detector import detect_icmp_discovery
 from timeline_builder import build_timeline
 from narrative_generator import generate_narrative
 from narrative_generator import generate_dns_narrative
+from narrative_generator import generate_icmp_narrative
 from narrative_generator import generate_port_scan_narrative
 from narrative_generator import generate_udp_activity_narrative
+
 
 
 
@@ -17,6 +22,8 @@ def main():
     tcp_scans = detect_port_scans(events)
     udp_activity = detect_udp_activity(events)
 
+    icmp_activity = detect_icmp_discovery(events)
+
     dns_events = detect_dns_activity(events)
 
 
@@ -24,6 +31,7 @@ def main():
     narrative.extend(generate_port_scan_narrative(tcp_scans))
     narrative.extend(generate_udp_activity_narrative(udp_activity))
     narrative.extend(generate_dns_narrative(dns_events))
+    narrative.extend(generate_icmp_narrative(icmp_activity))
 
     print("\n" + "=" * 60)
     print("INCIDENT NARRATIVE REPORT")
