@@ -1,46 +1,111 @@
-from scapy.all import rdpcap
-from scapy.all import IP
-from scapy.all import TCP
-from scapy.all import UDP
-from scapy.all import ICMP
-from datetime import datetime
+def generate_narrative(port_scans):
+
+    # generate human-readable narratives for detected port scans
+    
+    narrative = []
+
+    for scan in port_scans:
+        text = (
+            f"Between {scan['start_time']} & {scan['end_time']}, "
+            f"the host {scan['src']} conducted a reconnaissance scan against "
+            f"{scan['dst']}, probing the following ports: {scan['ports']}. "
+            f"This behavior is consistent with network reconnaissance activity."
+        )
+        narrative.append(text)
+
+    return narrative
+
+def generate_dns_narrative(dns_events):
+    narrative = []
+
+    if dns_events:
+        narrative.append(
+            f"DNS activity was observed involving {len(dns_events)} queries, "
+            f"which may indicate host discovery or external communication."
+        )
+
+    return narrative
+
+def format_time(dt):
+    
+    # Format datetime for readable incident reports.
+
+    return dt.strftime("%H:%M:%S %Z")
 
 
-def parse_pcap(pcap_file):
-    # load packets from PCAP file for parsing
-    packets = rdpcap(pcap_file)
-    events = []
+def generate_port_scan_narrative(scans: list[dict]) -> list[str]:
+    
+    # Generate well-formatted, analyst-friendly narratives for port scans.
 
-    for pkt in packets:
-        if IP in pkt:
-            event = {
-                "time": datetime.fromtimestamp(float(pkt.time)),
-                "src_ip": pkt[IP].src,
-                "dst_ip": pkt[IP].dst,
-                "protocol": "OTHER",
-                "src_port": None,
-                "dst_port": None,
-                "length": len(pkt)
-            }
+    narratives = []
 
-            # TCP
-            if TCP in pkt:
-                event["protocol"] = "TCP"
-                event["src_port"] = pkt[TCP].sport
-                event["dst_port"] = pkt[TCP].dport
+    for scan in scans:
+        src_ip = scan["src_ip"]
+        dst_ip = scan["dst_ip"]
 
-            # UDP
-            elif UDP in pkt:
-                event["protocol"] = "UDP"
-                event["src_port"] = pkt[UDP].sport
-                event["dst_port"] = pkt[UDP].dport
+        start = format_time(scan["start_time"])
+        end = format_time(scan["end_time"])
+        ports = ", ".join(str(p) for p in scan["ports"])
 
-            # ICMP
-            elif ICMP in pkt:
-                event["protocol"] = "ICMP"
-                event["icmp_type"] = pkt[ICMP].type
-                event["icmp_code"] = pkt[ICMP].code
+        narrative = (
+            "[Reconnaissance Detected]\n\n"
+            f"Source Host      : {src_ip}\n"
+            f"Target Host      : {dst_ip}\n"
+            f"Time Window      : {start} – {end}\n"
+            f"Ports Probed     : {ports}\n"
+            "Assessment       : Behavior is consistent with TCP port scanning "
+            "activity."
+        )
 
-            events.append(event)
+        narratives.append(narrative)
 
-    return events
+    return narratives
+
+
+def generate_udp_activity_narrative(udp_events: list[dict]) -> list[str]:
+    
+    # Generate analyst-friendly narratives for suspicious UDP activity.
+    
+    narratives = []
+
+    for event in udp_events:
+        start = format_time(event["start_time"])
+        end = format_time(event["end_time"])
+        ports = ", ".join(str(p) for p in event["ports"])
+
+        narrative = (
+            "[Suspicious UDP Activity Detected]\n\n"
+            f"Source Host      : {event['src_ip']}\n"
+            f"Target Host      : {event['dst_ip']}\n"
+            f"Time Window      : {start} – {end}\n"
+            f"Ports Targeted   : {ports}\n"
+            "Assessment       : High-volume or multi-port UDP activity was "
+            "observed. This may indicate service probing, discovery activity, "
+            "or protocol abuse."
+        )
+
+        narratives.append(narrative)
+
+    return narratives
+
+
+
+def generate_icmp_narrative(icmp_events: list[dict]) -> list[str]:
+
+    # Generate narratives for ICMP host discovery activity
+    
+    narratives = []
+
+    for event in icmp_events:
+        targets = ", ".join(event["targets"])
+        narrative = (
+            "[ICMP Host Discovery Detected]\n\n"
+            f"Source Host  : {event['src_ip']}\n"
+            f"Targets      : {targets}\n"
+            f"Total Hosts  : {event['count']}\n"
+            "Assessment   : Multiple hosts were pinged by this source, "
+            "indicating potential network reconnaissance activity."
+        )
+        narratives.append(narrative)
+
+    return narratives
