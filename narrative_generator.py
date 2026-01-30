@@ -40,21 +40,19 @@ def generate_port_scan_narrative(scans: list[dict]) -> list[str]:
     narratives = []
 
     for scan in scans:
-        src_ip = scan["src_ip"]
-        dst_ip = scan["dst_ip"]
-
-        start = format_time(scan["start_time"])
-        end = format_time(scan["end_time"])
-        ports = ", ".join(str(p) for p in scan["ports"])
+        mitre = scan["mitre"]
 
         narrative = (
             "[Reconnaissance Detected]\n\n"
-            f"Source Host      : {src_ip}\n"
-            f"Target Host      : {dst_ip}\n"
-            f"Time Window      : {start} – {end}\n"
-            f"Ports Probed     : {ports}\n"
-            "Assessment       : Behavior is consistent with TCP port scanning "
-            "activity."
+            f"Source Host      : {scan['src_ip']}\n"
+            f"Target Host      : {scan['dst_ip']}\n"
+            f"Time Window      : {format_time(scan['start_time'])} – "
+            f"{format_time(scan['end_time'])}\n"
+            f"Ports Probed     : {', '.join(map(str, scan['ports']))}\n\n"
+            "MITRE ATT&CK\n"
+            f"  Tactic         : {mitre['tactic']}\n"
+            f"  Technique      : {mitre['technique']} ({mitre['technique_id']})\n\n"
+            "Assessment       : Activity is consistent with network reconnaissance."
         )
 
         narratives.append(narrative)
@@ -87,3 +85,33 @@ def generate_udp_activity_narrative(udp_events: list[dict]) -> list[str]:
         narratives.append(narrative)
 
     return narratives
+
+
+
+def generate_icmp_narrative(icmp_events):
+
+    # Generate narratives for ICMP host discovery activity
+
+    narratives = []
+
+    for e in icmp_events:  # use the parameter name here
+        mitre = e["mitre"]
+
+        narrative = (
+            "[ICMP Host Discovery Detected]\n\n"
+            f"Source Host      : {e['src_ip']}\n"
+            f"Targets          : {', '.join(e['targets'])}\n"
+            f"Total Hosts      : {e['count']}\n\n"
+            "MITRE ATT&CK\n"
+            f"  Tactic         : {mitre['tactic']}\n"
+            f"  Technique      : {mitre['technique']} ({mitre['technique_id']})\n\n"
+            "Assessment       : Multiple ICMP echo requests indicate host discovery."
+        )
+
+
+        narratives.append(narrative)
+
+    return narratives
+
+
+
