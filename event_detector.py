@@ -2,6 +2,7 @@ from collections import defaultdict
 from scapy.layers.dns import DNS
 from scapy.layers.inet import ICMP
 from scapy.layers.inet import IP
+from mitre_mapping import MITRE_TECHNIQUES
 
 def detect_port_scans(events, threshold=3):
     scans = defaultdict(lambda: {
@@ -10,12 +11,7 @@ def detect_port_scans(events, threshold=3):
     })
 
     for e in events:
-        if (
-            e.get("protocol") != "TCP"
-            or not e.get("dst_port")
-            or not e.get("src_ip")
-            or not e.get("dst_ip")
-        ):
+        if e.get("protocol") != "TCP" or not e.get("dst_port"):
             continue
 
         key = (e["src_ip"], e["dst_ip"])
@@ -32,6 +28,7 @@ def detect_port_scans(events, threshold=3):
                 "ports": sorted(data["ports"]),
                 "start_time": min(data["times"]),
                 "end_time": max(data["times"]),
+                "mitre": MITRE_TECHNIQUES["TCP_PORT_SCAN"],
             })
 
     return results
@@ -57,7 +54,7 @@ def detect_dns_activity(events):
     return dns_queries
 
 
-def detect_udp_activity(events: list[dict], threshold: int = 5) -> list[dict]:
+def detect_udp_activity(events, threshold=5):
     
     # Detect suspicious UDP probing or scanning behavior.
     
@@ -66,23 +63,13 @@ def detect_udp_activity(events: list[dict], threshold: int = 5) -> list[dict]:
         "timestamps": []
     })
 
-    for event in events:
-        for event in events:
-            if (
-                event.get("protocol") != "UDP"
-                or not event.get("dst_port")
-                or not event.get("src_ip")
-                or not event.get("dst_ip")
-            ):
-
-                continue
-
-        if event["protocol"] != "UDP" or not event["dst_port"]:
+    for e in events:
+        if e.get("protocol") != "UDP" or not e.get("dst_port"):
             continue
 
-        key = (event["src_ip"], event["dst_ip"])
-        udp_tracker[key]["ports"].add(event["dst_port"])
-        udp_tracker[key]["timestamps"].append(event["time"])
+        key = (e["src_ip"], e["dst_ip"])
+        udp_tracker[key]["ports"].add(e["dst_port"])
+        udp_tracker[key]["timestamps"].append(e["time"])
 
     detections = []
     for (src_ip, dst_ip), data in udp_tracker.items():
@@ -94,6 +81,7 @@ def detect_udp_activity(events: list[dict], threshold: int = 5) -> list[dict]:
                 "ports": sorted(data["ports"]),
                 "start_time": min(data["timestamps"]),
                 "end_time": max(data["timestamps"]),
+                "mitre": MITRE_TECHNIQUES["UDP_PROBING"],
             })
 
     return detections
@@ -101,7 +89,7 @@ def detect_udp_activity(events: list[dict], threshold: int = 5) -> list[dict]:
 
 def detect_icmp_discovery(events):
     # detect ICMP host discovery activity like ping sweeps
-    
+
     # key is the source IP, values is a list of destination IPs
     icmp_tracker = defaultdict(list)  
 
@@ -110,23 +98,24 @@ def detect_icmp_discovery(events):
         if e.get("protocol") != "ICMP":
             continue
 
-        # We are interested in ICMP Echo Requests (type 8)
-        icmp_type = e.get("icmp_type")
-        if icmp_type == 8 and e.get("src_ip") and e.get("dst_ip"):
+        # ICMP Echo Requests
+        if e.get("icmp_type") == 8 and e.get("src_ip") and e.get("dst_ip"):
             icmp_tracker[e["src_ip"]].append(e["dst_ip"])
 
     detections = []
     for src_ip, dst_ips in icmp_tracker.items():
         
-        # threshold: > 1 host pinged    
-        if len(dst_ips) > 1:  
+        # threshold: > 1 host pinged 
+        if len(set(dst_ips)) > 1:
             detections.append({
                 "type": "ICMP Host Discovery",
                 "src_ip": src_ip,
-                # unique targets
-                "targets": list(set(dst_ips)),  
+                "targets": list(set(dst_ips)), 
                 "count": len(dst_ips),
+                "mitre": MITRE_TECHNIQUES["ICMP_DISCOVERY"],
             })
+
+
 
     return detections
 
