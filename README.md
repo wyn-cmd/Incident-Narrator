@@ -5,5 +5,5 @@ A simple personal python project that parses through given PCAP files to to gene
 # Installation
 
 Simply run:
-`pip install scapy pandas`
+`pip install scapy`
 Then run the `main.py` file to start analysing the 'capture.pcap' file in the same directory.
