@@ -1,13 +1,13 @@
 from datetime import datetime
 
 
+# format datetime for readable incident reports
 def format_time(dt: datetime) -> str:
-    """Format datetime for readable incident reports."""
     return dt.strftime("%H:%M:%S %Z")
 
 
+# legacy human-readable narratives for port scans
 def generate_narrative(port_scans: list[dict]) -> list[str]:
-    """Generate legacy human-readable narratives for detected port scans."""
     narrative = []
 
     for scan in port_scans:
@@ -22,8 +22,8 @@ def generate_narrative(port_scans: list[dict]) -> list[str]:
     return narrative
 
 
+# narratives for DNS query activity
 def generate_dns_narrative(dns_events: list[dict]) -> list[str]:
-    """Generate narratives for DNS query activity."""
     narratives = []
 
     if dns_events:
@@ -35,8 +35,8 @@ def generate_dns_narrative(dns_events: list[dict]) -> list[str]:
     return narratives
 
 
+# analyst-friendly narratives for port scans
 def generate_port_scan_narrative(scans: list[dict]) -> list[str]:
-    """Generate well-formatted, analyst-friendly narratives for port scans."""
     narratives = []
 
     for scan in scans:
@@ -60,8 +60,8 @@ def generate_port_scan_narrative(scans: list[dict]) -> list[str]:
     return narratives
 
 
+# analyst-friendly narratives for suspicious UDP activity
 def generate_udp_activity_narrative(udp_events: list[dict]) -> list[str]:
-    """Generate analyst-friendly narratives for suspicious UDP activity."""
     narratives = []
 
     for event in udp_events:
@@ -84,8 +84,8 @@ def generate_udp_activity_narrative(udp_events: list[dict]) -> list[str]:
     return narratives
 
 
+# narratives for ICMP host discovery activity
 def generate_icmp_narrative(icmp_events: list[dict]) -> list[str]:
-    """Generate narratives for ICMP host discovery activity."""
     narratives = []
 
     for e in icmp_events:
