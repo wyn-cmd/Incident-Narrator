@@ -1,4 +1,3 @@
-
 # MITRE ATT&CK technique mappings for the incident narrator
 
 MITRE_TECHNIQUES = {
